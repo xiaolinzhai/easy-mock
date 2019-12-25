@@ -23,6 +23,12 @@
               <Form-item :label="$t('p.detail.columns[0]')">
                 <i-input v-model="temp.description"></i-input>
               </Form-item>
+              <Form-item label="延时">
+                <i-input v-model="temp.delay" type="number"></i-input>
+              </Form-item>
+              <Form-item label="是否启用">
+                <i-switch v-model="!temp.disable"></i-switch>
+              </Form-item>
               <Form-item :label="$t('p.detail.editor.autoClose')" v-if="isEdit">
                 <i-switch v-model="autoClose"></i-switch>
               </Form-item>
@@ -79,7 +85,9 @@ export default {
         url: '',
         mode: '',
         method: '',
-        description: ''
+        description: '',
+        delay: '',
+        disable: false
       }
     }
   },
@@ -117,6 +125,8 @@ export default {
           this.temp.mode = this.value.mode
           this.temp.method = this.value.method
           this.temp.description = this.value.description
+          this.temp.delay = this.value.delay
+          this.temp.disable = this.value.disable
           this.codeEditor.setValue(this.temp.mode)
         } else {
           this.temp.url = ''
@@ -124,6 +134,8 @@ export default {
           this.temp.method = 'get'
           this.temp.description = ''
           this.codeEditor.setValue(this.temp.mode)
+          this.temp.delay = ''
+          this.temp.disable = false
         }
         this.format()
       }
@@ -186,6 +198,7 @@ export default {
           }
         })
       } else {
+        console.log(JSON.stringify(this.temp))
         this.$store.dispatch('mock/CREATE', {
           route: this.$route,
           ...this.temp,

@@ -58,7 +58,8 @@ module.exports = class MockController {
     const description = ctx.checkBody('description').notEmpty().value
     const url = ctx.checkBody('url').notEmpty().match(/^\/.*$/i, 'URL 必须以 / 开头').value
     const method = ctx.checkBody('method').notEmpty().toLow().in(['get', 'post', 'put', 'delete', 'patch']).value
-
+    const delay = ctx.checkBody('delay').notEmpty().toFloat('delay 必须是数字').value
+    const disable = ctx.checkBody('disable').notEmpty().toBoolean().value
     if (ctx.errors) {
       ctx.body = ctx.util.refail(null, 10001, ctx.errors)
       return
@@ -87,7 +88,9 @@ module.exports = class MockController {
       description,
       method,
       url,
-      mode
+      mode,
+      delay,
+      disable
     })
 
     await redis.del('project:' + projectId)

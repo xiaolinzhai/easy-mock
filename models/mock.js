@@ -15,6 +15,8 @@ const schema = new Schema({
   method: String,
   parameters: String,
   response_model: String,
+  delay: Number,
+  disable: Boolean,
   create_at: {
     type: Date,
     default: Date.now
