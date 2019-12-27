@@ -233,7 +233,7 @@ module.exports = class MockController {
 
     api = apis.filter((item) => {
       const url = item.url.replace(/{/g, ':').replace(/}/g, '') // /api/{user}/{id} => /api/:user/:id
-      return item.method === method && pathToRegexp(url).test(mockURL)
+      return item.method === method && pathToRegexp(url).test(mockURL) && !item.disable
     })[0]
 
     if (!api) ctx.throw(404)
@@ -276,7 +276,7 @@ module.exports = class MockController {
           template: new Function(`return ${api.mode}`) // eslint-disable-line
         }
       })
-
+      api.delay && await delay(api.delay)
       vm.run('Mock.mock(new Function("return " + mode)())') // 数据验证，检测 setTimeout 等方法
       apiData = vm.run('Mock.mock(template())') // 解决正则表达式失效的问题
 

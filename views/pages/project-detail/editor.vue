@@ -26,8 +26,8 @@
               <Form-item label="延时">
                 <i-input v-model="temp.delay" type="number"></i-input>
               </Form-item>
-              <Form-item label="是否启用">
-                <i-switch v-model="!temp.disable"></i-switch>
+              <Form-item label="是否停用">
+                <i-switch v-model="temp.disable"></i-switch>
               </Form-item>
               <Form-item :label="$t('p.detail.editor.autoClose')" v-if="isEdit">
                 <i-switch v-model="autoClose"></i-switch>
