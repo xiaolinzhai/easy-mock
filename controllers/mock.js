@@ -15,7 +15,7 @@ const { MockProxy, ProjectProxy, UserGroupProxy } = require('../proxy')
 
 const redis = util.getRedis()
 const defPageSize = config.get('pageSize')
-
+const delay = time => new Promise(resolve => setTimeout(resolve, time))
 async function checkByMockId (mockId, uid) {
   const api = await MockProxy.getById(mockId)
 
@@ -164,7 +164,8 @@ module.exports = class MockController {
     const description = ctx.checkBody('description').notEmpty().value
     const url = ctx.checkBody('url').notEmpty().match(/^\/.*$/i, 'URL 必须以 / 开头').value
     const method = ctx.checkBody('method').notEmpty().toLow().in(['get', 'post', 'put', 'delete', 'patch']).value
-
+    const delay = ctx.checkBody('delay').notEmpty().toFloat('delay 必须是数字').value
+    const disable = ctx.checkBody('disable').notEmpty().toBoolean().value
     if (ctx.errors) {
       ctx.body = ctx.util.refail(null, 10001, ctx.errors)
       return
@@ -183,6 +184,8 @@ module.exports = class MockController {
     api.mode = mode
     api.method = method
     api.description = description
+    api.delay = delay
+    api.disable = disable
 
     const existMock = await MockProxy.findOne({
       _id: { $ne: api.id },
@@ -207,7 +210,8 @@ module.exports = class MockController {
    */
 
   static async getMockAPI (ctx) {
-    const { query, body } = ctx.request
+    const { query, body, headers } = ctx.request
+    console.log('headers', headers)
     const method = ctx.method.toLowerCase()
     const jsonpCallback = query.jsonp_param_name && (query[query.jsonp_param_name] || 'callback')
     let { projectId, mockURL } = ctx.pathNode
@@ -248,12 +252,16 @@ module.exports = class MockController {
       const params = util.params(api.url.replace(/{/g, ':').replace(/}/g, ''), mockURL)
       const pathname = pathToRegexp.compile(url.pathname)(params)
       try {
+        api.delay && await delay(api.delay)
         apiData = await axios({
           method: method,
           url: url.protocol + '//' + url.host + pathname,
           params: _.assign({}, url.query, query),
           data: body,
-          timeout: 3000
+          timeout: 3000,
+          headers: {
+            utk: headers['utk'] || ''
+          }
         }).then(res => res.data)
       } catch (error) {
         ctx.body = ctx.util.refail(error.message || '接口请求失败')

@@ -125,8 +125,8 @@ export default {
           this.temp.mode = this.value.mode
           this.temp.method = this.value.method
           this.temp.description = this.value.description
-          this.temp.delay = this.value.delay
-          this.temp.disable = this.value.disable
+          this.temp.delay = this.value.delay || 0
+          this.temp.disable = this.value.disable || false
           this.codeEditor.setValue(this.temp.mode)
         } else {
           this.temp.url = ''
@@ -181,6 +181,7 @@ export default {
       }
 
       if (this.isEdit) {
+        console.log('temp', this.temp)
         api.mock.update({
           data: {
             ...this.temp,
@@ -194,6 +195,8 @@ export default {
             this.value.mode = this.temp.mode
             this.value.method = this.temp.method
             this.value.description = this.temp.description
+            this.value.delay = this.temp.delay
+            this.value.disable = this.temp.disable
             if (this.autoClose) this.close()
           }
         })
