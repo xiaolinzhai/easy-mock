@@ -76,13 +76,12 @@ module.exports = class BaseUtil {
     const paramNames = []
     const api = pathToRegexp(restURL, paramNames)
     const captures = fullURL.match(api)
-
     if (!captures) return {}
-
     captures.slice(1).forEach((value, i) => {
       /* istanbul ignore else */
+      // console.log("paramNames",paramNames[i]);
       if (paramNames[i]) {
-        params[paramNames[i].name] = this.safeDecodeURIComponent(value)
+        params[paramNames[i].name] = paramNames[i].repeat ? value.split('/') : this.safeDecodeURIComponent(value)
       }
     })
 

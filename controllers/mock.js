@@ -8,7 +8,7 @@ const Mock = require('mockjs')
 const axios = require('axios')
 const config = require('config')
 const pathToRegexp = require('path-to-regexp')
-
+const FormData = require('form-data')
 const util = require('../util')
 const ft = require('../models/fields_table')
 const { MockProxy, ProjectProxy, UserGroupProxy } = require('../proxy')
@@ -211,6 +211,7 @@ module.exports = class MockController {
 
   static async getMockAPI (ctx) {
     const { query, body, headers } = ctx.request
+
     console.log('headers', headers)
     const method = ctx.method.toLowerCase()
     const jsonpCallback = query.jsonp_param_name && (query[query.jsonp_param_name] || 'callback')
@@ -253,17 +254,40 @@ module.exports = class MockController {
       const pathname = pathToRegexp.compile(url.pathname)(params)
       try {
         api.delay && await delay(api.delay)
-        apiData = await axios({
-          method: method,
-          url: url.protocol + '//' + url.host + pathname,
-          params: _.assign({}, url.query, query),
-          data: body,
-          timeout: 3000,
-          headers: {
-            utk: headers['utk'] || ''
+        if (headers['content-type'].slice(0, 19) === 'multipart/form-data') {
+          delete headers['content-type']
+          delete headers['content-length']
+          let formData = new FormData()
+          for (let key in body.fields) {
+            if (typeof body.fields[key] === 'string') {
+              formData.append(key, body.fields[key])
+            }
           }
-        }).then(res => res.data)
+          apiData = await axios({
+            method: method,
+            url: url.protocol + '//' + url.host + pathname,
+            params: _.assign({}, url.query, query),
+            data: formData,
+            timeout: 3000,
+            // headers: _.assign({}, headers, formData.getHeaders())
+            headers: _.assign({}, headers, formData.getHeaders())
+          }).then(res => res.data)
+        } else {
+          apiData = await axios({
+            method: method,
+            url: url.protocol + '//' + url.host + pathname,
+            params: _.assign({}, url.query, query),
+            data: body,
+            timeout: 3000,
+            headers: headers
+          }).then(res => res.data)
+        }
       } catch (error) {
+        if (error.response) {
+          ctx.status = error.response.status
+          ctx.body = error.response.data
+          return
+        }
         ctx.body = ctx.util.refail(error.message || '接口请求失败')
         return
       }
