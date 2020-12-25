@@ -15,7 +15,69 @@ const { MockProxy, ProjectProxy, UserGroupProxy } = require('../proxy')
 
 const redis = util.getRedis()
 const defPageSize = config.get('pageSize')
+
 const delay = time => new Promise(resolve => setTimeout(resolve, time))
+let log4js = require('log4js')
+
+log4js.configure({
+  appenders: {
+    logstash: {
+      'type': 'log4js-logstash',
+      'host': 'localhost',
+      'port': 5959,
+      'fields': {
+        'instance': 'MyAwsInstance',
+        'source': 'myApp',
+        'environment': 'development'
+      }
+    }
+  },
+  categories: {
+    default: { appenders: ['logstash'], level: 'info' }
+  }
+})
+/*
+log4js.configure({
+  'appenders': [
+    {
+      'category': 'TEST',
+      'type': 'log4js-logstash',
+      'host': 'localhost',
+      'port': 5959,
+      'fields': {
+        'instance': 'MyAwsInstance',
+        'source': 'myApp',
+        'environment': 'development'
+      }
+    },
+    {
+      'category': 'tests',
+      'type': 'console'
+    }
+  ],
+  'levels': {
+    'tests': 'DEBUG'
+  }
+}) */
+
+let log = log4js.getLogger('tests')
+
+axios.interceptors.response.use(function (response) {
+  let _res = _.pick(response, ['headers', 'status', 'data', 'statusText'])
+  let _config = _.pick(response.config, ['url', 'method', 'baseURL', 'params', 'data', 'headers'])
+  _res.config = _config
+  if (!_res.data) {
+    _res.data = '{}'
+  }
+  log.info(JSON.stringify(_res))
+  //console.log(JSON.stringify(_res))
+  return response
+}/*, function (resErr) {
+  console.log('response err --------- \n')
+  //console.error(resErr)
+  return resErr;
+}*/)
+
 async function checkByMockId (mockId, uid) {
   const api = await MockProxy.getById(mockId)
 
@@ -212,7 +274,7 @@ module.exports = class MockController {
   static async getMockAPI (ctx) {
     const { query, body, headers } = ctx.request
 
-    console.log('headers', headers)
+    /* console.log('headers', headers) */
     const method = ctx.method.toLowerCase()
     const jsonpCallback = query.jsonp_param_name && (query[query.jsonp_param_name] || 'callback')
     let { projectId, mockURL } = ctx.pathNode
@@ -254,6 +316,7 @@ module.exports = class MockController {
       const pathname = pathToRegexp.compile(url.pathname)(params)
       try {
         api.delay && await delay(api.delay)
+        console.log(" ------------------------------------------------")
         if (headers['content-type'].slice(0, 19) === 'multipart/form-data') {
           delete headers['content-type']
           delete headers['content-length']
@@ -268,7 +331,7 @@ module.exports = class MockController {
             url: url.protocol + '//' + url.host + pathname,
             params: _.assign({}, url.query, query),
             data: formData,
-            timeout: 3000,
+            timeout: 10000,
             // headers: _.assign({}, headers, formData.getHeaders())
             headers: _.assign({}, headers, formData.getHeaders())
           }).then(res => res.data)
@@ -278,9 +341,13 @@ module.exports = class MockController {
             url: url.protocol + '//' + url.host + pathname,
             params: _.assign({}, url.query, query),
             data: body,
-            timeout: 3000,
+            timeout: 10000,
             headers: headers
-          }).then(res => res.data)
+          }).then(res => res.data);
+          console.log(" ------------------------------------------------")
+
+          console.log(" ------------------------------------------------")
+
         }
       } catch (error) {
         if (error.response) {

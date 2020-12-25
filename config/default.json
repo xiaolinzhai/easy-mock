@@ -9,7 +9,7 @@
     "keyPrefix": "[Easy Mock]",
     "port": 6379,
     "host": "localhost",
-    "password": "",
+    "password": "foobared",
     "db": 0
   },
   "blackList": {
